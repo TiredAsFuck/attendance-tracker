@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حضور و غیاب من</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="حضور و غیاب">
+
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Vazirmatn,Tahoma,sans-serif;background:#eef2f7;color:#0f172a;min-height:100vh;padding:20px 16px;line-height:1.6}
+  .container{max-width:900px;margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+  h1{font-size:22px}
+  .muted{color:#94a3b8;font-size:13px}
+  .btn{font-family:inherit;font-size:14px;padding:10px 16px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:#4f46e5;color:#4f46e5}
+  .btn.primary{background:#4f46e5;border-color:#4f46e5;color:#fff}
+  .btn.primary:hover{background:#4338ca;color:#fff}
+  .btn.danger{color:#dc2626;border-color:#dc2626}
+  .btn.danger:hover{background:#dc2626;color:#fff}
+  .btn.sm{padding:7px 12px;font-size:13px}
+  .header-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:18px;margin-bottom:20px;box-shadow:0 4px 20px rgba(15,23,42,.05)}
+  #addCourseCard{display:none;animation:slideDown .25s ease}
+  #addCourseCard.open{display:block}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>input{flex:1;min-width:180px}
+  input[type=text],textarea,select{font-family:inherit;font-size:14px;padding:11px 14px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;outline:none;width:100%}
+  textarea{resize:vertical;min-height:60px}
+  select{cursor:pointer}
+  input:focus,textarea:focus,select:focus{border-color:#4f46e5;box-shadow:0 0 0 3px #eef2ff}
+  h2{font-size:16px;margin-bottom:14px}
+  .schedule-editor{margin-top:16px}
+  .schedule-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .schedule-label{font-size:13px;color:#64748b;font-weight:500}
+  .schedule-slots{display:flex;flex-direction:column;gap:8px}
+
+  /* Schedule slot: grid keeps ✕ aligned with selects */
+  .slot-row{
+    display:grid;
+    grid-template-columns:1.3fr 1.2fr auto;
+    gap:8px;
+    align-items:center;
+    padding:10px;
+    background:#f8fafc;
+    border-radius:12px;
+    border:1px solid #e2e8f0;
+  }
+  .slot-row select{padding:9px 12px;font-size:13px}
+  .slot-row .slot-remove{
+    background:none;border:none;cursor:pointer;
+    color:#94a3b8;font-size:16px;padding:6px 8px;
+    border-radius:8px;font-family:inherit;
+  }
+  .slot-row .slot-remove:hover{color:#dc2626;background:#fee2e2}
+
+  .section-title{display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px;gap:10px}
+  .section-title h2{margin:0;display:flex;align-items:center;gap:8px;font-size:15px}
+  .count-badge{display:inline-block;background:#eef2ff;color:#4f46e5;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500}
+  .section-content{margin-bottom:16px}
+  .schedule-display{display:flex;flex-direction:column;gap:8px}
+  .schedule-display .no-schedule{text-align:center;padding:12px;color:#94a3b8;font-size:13px;background:#f8fafc;border-radius:12px}
+  .add-slot-wrap{margin-top:10px}
+
+  /* Calendar */
+  .calendar-container{background:#f8fafc;border-radius:14px;padding:10px;max-width:320px;margin:0 auto}
+  .calendar-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:6px}
+  .calendar-nav button{background:#fff;border:1px solid #e2e8f0;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:15px;font-family:inherit;color:#0f172a;display:grid;place-items:center;line-height:1;padding:0}
+  .calendar-nav button:hover{border-color:#4f46e5;color:#4f46e5}
+  .cal-month-label{flex:1;text-align:center;font-weight:600;font-size:13px}
+  .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:20px;grid-auto-rows:36px;gap:3px;direction:rtl}
+  .cal-head{text-align:center;font-size:11px;color:#94a3b8;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center}
+  .cal-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;position:relative;cursor:default;padding:0;height:36px;transition:.15s}
+  .cal-cell.empty{background:transparent;border:none}
+  .cal-cell.clickable{cursor:pointer}
+  .cal-cell.has-class{border-color:#c7d2fe;background:#eef2ff}
+  .cal-cell.has-class:hover{border-color:#4f46e5}
+  .cal-cell.has-session.session-present{background:#dcfce7;border-color:#86efac}
+  .cal-cell.has-session.session-absent{background:#fee2e2;border-color:#fca5a5}
+  .cal-cell.has-session.session-late{background:#fef3c7;border-color:#fcd34d}
+  .cal-cell.has-session.session-excused{background:#e2e8f0;border-color:#cbd5e1}
+  .cal-day-num{font-weight:600;font-size:12px;line-height:1}
+  .cal-dot{width:4px;height:4px;border-radius:99px;background:#4f46e5;position:absolute;bottom:3px}
+
+  /* Today: ring only */
+  .cal-cell.today{box-shadow:inset 0 0 0 2px #4f46e5}
+  .cal-cell.today .cal-day-num{color:#4f46e5;font-weight:700}
+
+  /* Selected: solid fill */
+  .cal-cell.selected{background:#4f46e5!important;border-color:#4f46e5!important;box-shadow:0 4px 12px rgba(79,70,229,.35);transform:scale(1.10);z-index:3}
+  .cal-cell.selected .cal-day-num{color:#fff!important;font-weight:700}
+  .cal-cell.selected .cal-dot{background:#fff!important}
+  .cal-cell.today.selected{box-shadow:inset 0 0 0 2px #fff,0 4px 12px rgba(79,70,229,.35)}
+
+  .cal-day-info{margin-top:10px;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;font-size:13px}
+  .cal-info-head{font-weight:600;margin-bottom:6px;font-size:12px}
+  .cal-info-class{color:#64748b;font-size:12px;padding:2px 0}
+  .cal-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:8px;font-size:10px;color:#64748b}
+  .cal-legend span{display:inline-flex;align-items:center;gap:3px}
+  .cal-legend .legend-dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+  /* Today card */
+  .today-card{background:linear-gradient(135deg,#eef2ff 0%,#fff 60%);border:1px solid #c7d2fe;box-shadow:0 6px 24px rgba(79,70,229,.08)}
+  .today-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+  .today-title h2{font-size:16px;margin:0}
+  .today-empty{text-align:center;padding:22px;color:#94a3b8;font-size:14px}
+  .today-item{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:#fff;border:1px solid #e2e8f0;margin-bottom:8px;flex-wrap:wrap}
+  .today-item:last-child{margin-bottom:0}
+  .today-info{flex:1;min-width:200px}
+  .today-name{font-weight:600;font-size:15px;margin-bottom:2px}
+  .today-meta{font-size:13px;color:#64748b;margin-top:4px}
+  .today-actions{display:flex;gap:5px;flex-wrap:wrap}
+  .today-actions .btn{padding:8px 12px;font-size:13px}
+  .today-actions .btn.present:hover{border-color:#16a34a;color:#16a34a}
+  .today-actions .btn.absent:hover{border-color:#dc2626;color:#dc2626}
+  .today-marked{display:flex;align-items:center;gap:8px}
+
+  /* Course cards */
+  .course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+  .course-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;gap:6px}
+  .course-card:hover{border-color:#4f46e5;transform:translateY(-2px)}
+  .course-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:2px}
+  .course-head h3{font-size:16px;word-break:break-word}
+  .icon-btn{background:none;border:none;cursor:pointer;font-size:15px;padding:4px 6px;border-radius:6px;color:#94a3b8;font-family:inherit}
+  .icon-btn:hover{color:#dc2626;background:#fee2e2}
+  .progress{height:8px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin:8px 0}
+  .progress>div{height:100%;background:#16a34a;border-radius:99px;transition:width .3s}
+  .progress>div.mid{background:#d97706}
+  .progress>div.low{background:#dc2626}
+  .stats-mini{display:flex;gap:6px;flex-wrap:wrap;font-size:12px}
+  .stats-mini span{padding:3px 8px;border-radius:99px;background:#f1f5f9}
+  .stats-mini .present{background:#dcfce7;color:#16a34a}
+  .stats-mini .absent{background:#fee2e2;color:#dc2626}
+  .note-preview{font-size:12px;color:#64748b;background:#f8fafc;padding:6px 10px;border-radius:8px;border-right:3px solid #4f46e5;margin-top:4px}
+  .empty{grid-column:1/-1;text-align:center;padding:40px 20px;border:2px dashed #cbd5e1;border-radius:16px;color:#94a3b8}
+  .empty .btn{margin-top:14px}
+
+  /* Modals */
+  .overlay{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .overlay.open{display:flex}
+  .modal{background:#fff;border-radius:20px;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;padding:22px}
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:18px}
+  .modal-head h2{margin-bottom:4px}
+  .stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+  .stat{background:#f8fafc;border-radius:12px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:20px}
+  .stat span{font-size:12px;color:#94a3b8}
+  .stat.present b{color:#16a34a}
+  .stat.absent b{color:#dc2626}
+  .add-session{background:#f8fafc;border-radius:14px;padding:14px;margin-bottom:18px}
+  .add-session label{font-size:13px;color:#64748b;display:block;margin-bottom:6px}
+  .add-session .field{margin-bottom:10px}
+  .date-row{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px}
+  .status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+  .status-grid .btn{font-size:13px;padding:10px 6px}
+  .status-grid .btn.present:hover{border-color:#16a34a;color:#16a34a}
+  .status-grid .btn.absent:hover{border-color:#dc2626;color:#dc2626}
+
+  /* Session item: column layout so note spans full width */
+  .session-item{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding:10px 12px;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    margin-bottom:6px;
+  }
+  .session-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .session-head .date{
+    flex:1;
+    min-width:0;
+    font-size:13px;
+    font-weight:500;
+  }
+  .session-note{
+    font-size:12px;
+    color:#64748b;
+    background:#f8fafc;
+    padding:8px 10px;
+    border-radius:6px;
+    width:100%;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+
+  .badge{font-size:12px;padding:4px 10px;border-radius:99px;font-weight:500;white-space:nowrap}
+  .badge.present{background:#dcfce7;color:#16a34a}
+  .badge.absent{background:#fee2e2;color:#dc2626}
+  .badge.late{background:#fef3c7;color:#d97706}
+  .badge.excused{background:#e2e8f0;color:#64748b}
+  .notes-box{background:#f8fafc;border-radius:14px;padding:14px;margin-top:8px}
+  .note-item{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .note-item .note-content{flex:1;min-width:0}
+  .note-item .note-text{font-size:13px;white-space:pre-wrap;word-break:break-word}
+  .note-item .note-time{font-size:11px;color:#94a3b8;margin-top:4px}
+  .note-form{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;align-items:stretch}
+  .note-form textarea{min-height:60px;width:100%}
+  .note-form .btn{width:100%;min-width:100px}
+  .backup-list{display:flex;flex-direction:column;gap:12px}
+  .backup-item{border:1px solid #e2e8f0;border-radius:14px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .backup-item h4{font-size:14px;margin-bottom:4px}
+  .backup-item p{font-size:12px;color:#94a3b8}
+  .file-input{display:none}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,150%);background:#0f172a;color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;transition:transform .3s,opacity .3s,visibility .3s;z-index:100;max-width:90vw;text-align:center;visibility:hidden;opacity:0;pointer-events:none}
+  .toast.show{transform:translate(-50%,0);visibility:visible;opacity:1;pointer-events:auto}
+  .toast.error{background:#dc2626}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>📋 حضور و غیاب من</h1>
+      <p class="muted" id="lastBackup">هنوز پشتیبان نگرفته ای</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn" type="button" id="installBtn" style="display:none">📲 نصب برنامه</button>
+      <button class="btn primary" type="button" id="toggleAddCourse">➕ افزودن درس</button>
+      <button class="btn" type="button" id="openBackup">💾 پشتیبان گیری</button>
+    </div>
+  </header>
+
+  <div id="todaySection"></div>
+
+  <div class="card" id="addCourseCard">
+    <h2>افزودن درس جدید</h2>
+    <div class="row">
+      <input type="text" id="courseName" placeholder="نام درس (مثلاً الکترونیک ۲)" maxlength="60">
+      <input type="text" id="courseTeacher" placeholder="نام استاد (اختیاری)" maxlength="60">
+    </div>
+    <div class="schedule-editor">
+      <div class="schedule-head">
+        <span class="schedule-label">📅 روز های هفتگی کلاس (اختیاری)</span>
+        <button type="button" class="btn sm" id="addSlotBtn">+ افزودن روز</button>
+      </div>
+      <div id="scheduleSlots" class="schedule-slots"></div>
+    </div>
+    <div style="margin-top:16px">
+      <button class="btn primary" type="button" id="addCourseBtn">افزودن درس</button>
+    </div>
+  </div>
+
+  <div id="courseList" class="course-grid"></div>
+</div>
+
+<!-- Course detail modal -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="detailTitle"></h2>
+        <p class="muted" id="detailTeacher"></p>
+      </div>
+      <button class="icon-btn" type="button" id="closeDetail">✕</button>
+    </div>
+    <div class="stats-row" id="detailStats"></div>
+    <div class="progress"><div id="detailBar"></div></div>
+
+    <div class="section-title"><h2>📆 تقویم ماهانه</h2></div>
+    <div class="section-content">
+      <div class="calendar-container">
+        <div class="calendar-nav">
+          <button type="button" id="prevMonth" title="ماه قبل">‹</button>
+          <span class="cal-month-label" id="calMonthLabel"></span>
+          <button type="button" id="nextMonth" title="ماه بعد">›</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="cal-legend">
+          <span><span class="legend-dot" style="background:#eef2ff;border:1px solid #c7d2fe"></span>کلاس دارد</span>
+          <span><span class="legend-dot" style="background:#dcfce7;border:1px solid #86efac"></span>حاضر</span>
+          <span><span class="legend-dot" style="background:#fee2e2;border:1px solid #fca5a5"></span>غایب</span>
+        </div>
+      </div>
+      <div class="cal-day-info" id="calDayInfo" style="display:none"></div>
+    </div>
+
+    <div class="section-title">
+      <h2>📅 روز های هفتگی <span class="count-badge" id="scheduleCount">۰</span></h2>
+      <button class="btn sm" type="button" id="toggleDetailSchedule">نمایش</button>
+    </div>
+    <div class="section-content" id="detailScheduleWrap" style="display:none">
+      <div class="schedule-display" id="detailSchedule"></div>
+      <div class="add-slot-wrap">
+        <button class="btn sm" type="button" id="addSlotToCourseBtn">+ افزودن روز</button>
+      </div>
+    </div>
+
+    <div class="add-session">
+      <div class="field">
+        <label>تاریخ جلسه (شمسی)</label>
+        <div class="date-row">
+          <select id="jYear"></select>
+          <select id="jMonth"></select>
+          <select id="jDay"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="sessionNote">یادداشت جلسه (اختیاری)</label>
+        <textarea id="sessionNote" placeholder="مثلاً: جلسه جبرانی، امتحان میان ترم..." maxlength="300"></textarea>
+      </div>
+      <div class="status-grid">
+        <button class="btn present" type="button" data-status="present">✅ حاضر</button>
+        <button class="btn absent" type="button" data-status="absent">❌ غایب</button>
+      </div>
+    </div>
+
+    <div class="section-title"><h2>📝 یادداشت های درس</h2></div>
+    <div class="notes-box">
+      <div class="note-form">
+        <textarea id="newNoteInput" placeholder="یادداشت جدید درباره این درس..." maxlength="500"></textarea>
+        <button class="btn primary sm" type="button" id="addNoteBtn">افزودن</button>
+      </div>
+      <div id="notesList"></div>
+    </div>
+
+    <div class="section-title"><h2>📋 جلسات ثبت شده</h2></div>
+    <div id="sessionList"></div>
+  </div>
+</div>
+
+<!-- Backup modal -->
+<div class="overlay" id="backupOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>پشتیبان گیری و بازیابی</h2>
+        <p class="muted">داده ها فقط در مرورگر شما ذخیره می شوند</p>
+      </div>
+      <button class="icon-btn" type="button" id="closeBackup">✕</button>
+    </div>
+    <div class="backup-list">
+      <div class="backup-item">
+        <div><h4>📥 دانلود پشتیبان</h4><p>فایل JSON از همه داده ها</p></div>
+        <button class="btn primary" type="button" id="exportJson">دانلود JSON</button>
+      </div>
+      <div class="backup-item">
+        <div><h4>📊 خروجی CSV</h4><p>برای باز کردن در Excel</p></div>
+        <button class="btn" type="button" id="exportCsv">دانلود CSV</button>
+      </div>
+      <div class="backup-item">
+        <div><h4>📤 بازیابی از فایل</h4><p>فایل JSON پشتیبان را انتخاب کنید</p></div>
+        <div>
+          <button class="btn" type="button" id="pickFileBtn">انتخاب فایل</button>
+          <input type="file" id="importFile" class="file-input" accept=".json,application/json">
+        </div>
+      </div>
+      <div class="backup-item">
+        <div><h4>🗑 پاک کردن همه</h4><p>قابل بازگشت نیست</p></div>
+        <button class="btn danger" type="button" id="wipeBtn">پاک کردن</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* Error handler */
+  window.addEventListener('error', function(e) {
+    console.error('[Err]', e.message, 'line', e.lineno);
+  });
+
+  /* Jalali <-> Gregorian conversion */
+  var J_BREAKS = [-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
+  function jDiv(a,b){return ~~(a/b)}
+  function jMod(a,b){return a-~~(a/b)*b}
+
+  function jalCal(jy, noLeap) {
+    var bl = J_BREAKS.length, gy = jy + 621, leapJ = -14, jp = J_BREAKS[0],
+        jm, jump, leap, leapG, march, n, i;
+    if (jy < jp || jy >= J_BREAKS[bl - 1]) throw new Error('bad year');
+    for (i = 1; i < bl; i++) {
+      jm = J_BREAKS[i]; jump = jm - jp;
+      if (jy < jm) break;
+      leapJ += jDiv(jump, 33) * 8 + jDiv(jMod(jump, 33), 4);
+      jp = jm;
+    }
+    n = jy - jp;
+    leapJ += jDiv(n, 33) * 8 + jDiv(jMod(n, 33) + 3, 4);
+    if (jMod(jump, 33) === 4 && jump - n === 4) leapJ++;
+    leapG = jDiv(gy, 4) - jDiv((jDiv(gy, 100) + 1) * 3, 4) - 150;
+    march = 20 + leapJ - leapG;
+    if (!noLeap) {
+      if (jump - n < 6) n = n - jump + jDiv(jump + 4, 33) * 33;
+      leap = jMod(jMod(n + 1, 33) - 1, 4);
+      if (leap === -1) leap = 4;
+    }
+    return { leap: leap, gy: gy, march: march };
+  }
+
+  function jG2D(gy, gm, gd) {
+    var d = jDiv((gy + jDiv(gm - 8, 6) + 100100) * 1461, 4)
+          + jDiv(153 * jMod(gm + 9, 12) + 2, 5) + gd - 34840408;
+    return d - jDiv(jDiv(gy + 100100 + jDiv(gm - 8, 6), 100) * 3, 4) + 752;
+  }
+
+  function jD2G(jdn) {
+    var j = 4 * jdn + 139361631;
+    j = j + jDiv(jDiv(4 * jdn + 183187720, 146097) * 3, 4) * 4 - 3908;
+    var i = jDiv(jMod(j, 1461), 4) * 5 + 308;
+    var gd = jDiv(jMod(i, 153), 5) + 1;
+    var gm = jMod(jDiv(i, 153), 12) + 1;
+    var gy = jDiv(j, 1461) - 100100 + jDiv(8 - gm, 6);
+    return { gy: gy, gm: gm, gd: gd };
+  }
+
+  function jJ2D(jy, jm, jd) {
+    var r = jalCal(jy, true);
+    return jG2D(r.gy, 3, r.march) + (jm - 1) * 31 - jDiv(jm, 7) * (jm - 7) + jd - 1;
+  }
+
+  function jD2J(jdn) {
+    var gy = jD2G(jdn).gy, jy = gy - 621, r = jalCal(jy, false),
+        jdn1f = jG2D(gy, 3, r.march), jd, jm, k;
+    k = jdn - jdn1f;
+    if (k >= 0) {
+      if (k <= 185) { jm = 1 + jDiv(k, 31); jd = jMod(k, 31) + 1; return { jy: jy, jm: jm, jd: jd }; }
+      k -= 186;
+    } else { jy--; k += 179; if (r.leap === 1) k++; }
+    jm = 7 + jDiv(k, 30);
+    jd = jMod(k, 30) + 1;
+    return { jy: jy, jm: jm, jd: jd };
+  }
+
+  function toJalaali(gy, gm, gd) { return jD2J(jG2D(gy, gm, gd)); }
+  function toGregorian(jy, jm, jd) { return jD2G(jJ2D(jy, jm, jd)); }
+
+  function jalaliMonthLength(jy, jm) {
+    if (jm <= 6) return 31;
+    if (jm <= 11) return 30;
+    try {
+      var g = toGregorian(jy, 12, 30);
+      var b = toJalaali(g.gy, g.gm, g.gd);
+      return (b.jy === jy && b.jm === 12 && b.jd === 30) ? 30 : 29;
+    } catch (e) { return 29; }
+  }
+
+  var J_MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  var DAYS_FA = ['شنبه','یکشنبه','دوشنبه','سه شنبه','چهارشنبه','پنجشنبه','جمعه'];
+  var DAYS_SHORT = ['ش','ی','د','س','چ','پ','ج'];
+  var WEEK_TYPES = { all: 'هر هفته', odd: 'فرد', even: 'زوج' };
+
+  function isoToJalali(iso) {
+    var p = String(iso).split('-');
+    if (p.length !== 3) return null;
+    try { return toJalaali(+p[0], +p[1], +p[2]); } catch (e) { return null; }
+  }
+  function jalaliToISO(jy, jm, jd) {
+    var g = toGregorian(jy, jm, jd);
+    return g.gy + '-' + pad2(g.gm) + '-' + pad2(g.gd);
+  }
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+  /* Day helpers */
+  function jsDayToPersian(jsDay) { return (jsDay + 1) % 7; }
+
+  function getTodayContext() {
+    var d = new Date();
+    var j = toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    var doy = j.jd;
+    for (var m = 1; m < j.jm; m++) doy += jalaliMonthLength(j.jy, m);
+    var wn = Math.ceil(doy / 7);
+    return {
+      dayIndex: jsDayToPersian(d.getDay()),
+      parity: (wn % 2 === 1) ? 'odd' : 'even',
+      dateISO: todayISO(),
+      jalali: j
+    };
+  }
+
+  function getTodayClasses() {
+    var ctx = getTodayContext();
+    var out = [];
+    for (var i = 0; i < courses.length; i++) {
+      var c = courses[i];
+      var sch = c.schedule || [];
+      for (var j = 0; j < sch.length; j++) {
+        var s = sch[j];
+        if (s.day !== ctx.dayIndex) continue;
+        if (s.weekType !== 'all' && s.weekType !== ctx.parity) continue;
+        var sess = null;
+        for (var k = 0; k < c.sessions.length; k++) {
+          if (c.sessions[k].date === ctx.dateISO) { sess = c.sessions[k]; break; }
+        }
+        out.push({ course: c, slot: s, session: sess });
+      }
+    }
+    return out;
+  }
+
+  /* State */
+  var STORAGE_KEY = 'attendance-tracker-v1';
+  var STATUS_LABELS = { present: 'حاضر', absent: 'غایب', late: 'تأخیر', excused: 'مرخصی' };
+
+  var courses = [];
+  var lastBackup = null;
+  var currentCourseId = null;
+  var modalHistoryPushed = false;
+  var detailScheduleOpen = false;
+  var calViewYear = null, calViewMonth = null;
+  var selectedCalDate = null;
+
+  function $(id) { return document.getElementById(id); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function todayISO() {
+    var d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+  function timestampForFile() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
+           '-' + pad2(d.getHours()) + '-' + pad2(d.getMinutes());
+  }
+  function faNum(n) {
+    try { return Number(n).toLocaleString('fa-IR', { useGrouping: false }); } catch (e) { return String(n); }
+  }
+  function formatDate(iso) {
+    var j = isoToJalali(iso);
+    if (!j) return iso;
+    var d = new Date(iso + 'T00:00:00');
+    return DAYS_FA[jsDayToPersian(d.getDay())] + ' ' + faNum(j.jd) + ' ' + J_MONTHS[j.jm - 1] + ' ' + faNum(j.jy);
+  }
+  function formatDateTime(iso) {
+    try {
+      var d = new Date(iso);
+      var j = toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+      return faNum(j.jd) + ' ' + J_MONTHS[j.jm - 1] + ' ' + faNum(j.jy) +
+             ' - ' + faNum(pad2(d.getHours())) + ':' + faNum(pad2(d.getMinutes()));
+    } catch (e) { return iso; }
+  }
+  var toastTimer = null;
+  function toast(msg, isErr) {
+    var el = $('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (isErr ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { el.className = 'toast'; }, 2500);
+  }
+
+  /* Persistence */
+  function saveData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ courses: courses, lastBackup: lastBackup }));
+    } catch (e) { console.error('[Save]', e); }
+  }
+
+  function loadData() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      if (d && Array.isArray(d.courses)) {
+        courses = d.courses.map(normalizeCourse);
+        lastBackup = d.lastBackup || null;
+      }
+    } catch (e) { console.error('[Load]', e); }
+  }
+
+  function normalizeCourse(c) {
+    return {
+      id: c.id || uid(),
+      name: String(c.name || 'بدون نام').slice(0, 80),
+      teacher: String(c.teacher || '').slice(0, 80),
+      schedule: Array.isArray(c.schedule) ? c.schedule
+        .filter(function(s) { return s && typeof s.day === 'number'; })
+        .map(function(s) {
+          return {
+            id: s.id || uid(),
+            day: s.day,
+            weekType: (s.weekType === 'odd' || s.weekType === 'even') ? s.weekType : 'all'
+          };
+        }) : [],
+      notes: Array.isArray(c.notes) ? c.notes.map(function(n) {
+        return { id: n.id || uid(), text: String(n.text || '').slice(0, 500), createdAt: n.createdAt || new Date().toISOString() };
+      }) : [],
+      sessions: Array.isArray(c.sessions) ? c.sessions
+        .filter(function(s) { return s && s.date && STATUS_LABELS[s.status]; })
+        .map(function(s) {
+          return { id: s.id || uid(), date: String(s.date), status: s.status, note: String(s.note || '').slice(0, 300) };
+        }) : []
+    };
+  }
+
+  /* Stats */
+  function getStats(course) {
+    var st = { present: 0, absent: 0, late: 0, excused: 0 };
+    (course.sessions || []).forEach(function(s) { if (st[s.status] !== undefined) st[s.status]++; });
+    st.total = (course.sessions || []).length;
+    st.attended = st.present + st.late;
+    st.rate = st.total > 0 ? Math.round(st.attended / st.total * 100) : 0;
+    return st;
+  }
+  function rateClass(r) { return r >= 80 ? '' : (r >= 50 ? 'mid' : 'low'); }
+  function findCourse(id) {
+    for (var i = 0; i < courses.length; i++) if (courses[i].id === id) return courses[i];
+    return null;
+  }
+
+  /* Schedule slot row */
+  function createSlotRow(slot, container) {
+    var row = document.createElement('div');
+    row.className = 'slot-row';
+    if (slot && slot.id) row.setAttribute('data-slot-id', slot.id);
+
+    var daySel = document.createElement('select');
+    daySel.className = 'slot-day';
+    DAYS_FA.forEach(function(name, i) {
+      var o = document.createElement('option');
+      o.value = i; o.textContent = name;
+      daySel.appendChild(o);
+    });
+    daySel.value = slot && typeof slot.day === 'number' ? slot.day : 0;
+    row.appendChild(daySel);
+
+    var weekSel = document.createElement('select');
+    weekSel.className = 'slot-week';
+    [['all','هر هفته'],['odd','فرد'],['even','زوج']].forEach(function(p) {
+      var o = document.createElement('option');
+      o.value = p[0]; o.textContent = p[1];
+      weekSel.appendChild(o);
+    });
+    weekSel.value = (slot && slot.weekType) || 'all';
+    row.appendChild(weekSel);
+
+    var rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'slot-remove';
+    rm.textContent = '✕';
+    rm.title = 'حذف روز';
+    rm.onclick = function() { row.parentNode.removeChild(row); };
+    row.appendChild(rm);
+
+    if (container) container.appendChild(row);
+    return row;
+  }
+
+  function readSchedule(container) {
+    var rows = container.querySelectorAll('.slot-row');
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      out.push({
+        id: r.getAttribute('data-slot-id') || uid(),
+        day: parseInt(r.querySelector('.slot-day').value, 10),
+        weekType: r.querySelector('.slot-week').value
+      });
+    }
+    return out;
+  }
+
+  /* Render: today */
+  function renderToday() {
+    var box = $('todaySection');
+    if (!courses.length) { box.innerHTML = ''; return; }
+
+    var ctx = getTodayContext();
+    var classes = getTodayClasses();
+    var dateStr = DAYS_FA[ctx.dayIndex] + ' ' + faNum(ctx.jalali.jd) + ' ' +
+                  J_MONTHS[ctx.jalali.jm - 1] + ' ' + faNum(ctx.jalali.jy);
+
+    var html = '<div class="card today-card"><div class="today-title">';
+    html += '<h2>📅 امروز — ' + dateStr + '</h2>';
+    html += '<span class="muted">هفته ' + (ctx.parity === 'odd' ? 'فرد' : 'زوج') + '</span>';
+    html += '</div>';
+
+    if (!classes.length) {
+      html += '<div class="today-empty">امروز کلاسی نداری 🎉</div>';
+    } else {
+      classes.forEach(function(it) { html += renderTodayItem(it); });
+    }
+    html += '</div>';
+    box.innerHTML = html;
+  }
+
+  function renderTodayItem(it) {
+    var c = it.course, s = it.slot, sess = it.session;
+    var html = '<div class="today-item"><div class="today-info">';
+    html += '<div class="today-name">' + escapeHtml(c.name) + '</div>';
+    if (c.teacher) html += '<div class="muted">' + escapeHtml(c.teacher) + '</div>';
+    if (s.weekType !== 'all') {
+      html += '<div class="today-meta">هفته ' + WEEK_TYPES[s.weekType] + '</div>';
+    }
+    html += '</div>';
+
+    if (sess) {
+      html += '<div class="today-marked"><span class="badge ' + sess.status + '">' + STATUS_LABELS[sess.status] + '</span>';
+      html += '<button class="btn sm" type="button" data-today-change="' + c.id + '">تغییر</button></div>';
+    } else {
+      html += '<div class="today-actions">';
+      html += '<button class="btn present" type="button" data-today-mark="' + c.id + '" data-status="present">✅ حاضر</button>';
+      html += '<button class="btn absent" type="button" data-today-mark="' + c.id + '" data-status="absent">❌ غایب</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function markToday(cid, status) {
+    var c = findCourse(cid);
+    if (!c) return;
+    var date = todayISO();
+    c.sessions = c.sessions.filter(function(s) { return s.date !== date; });
+    c.sessions.push({ id: uid(), date: date, status: status, note: '' });
+    saveData();
+    renderToday(); renderCourses();
+    toast('«' + STATUS_LABELS[status] + '» برای امروز ثبت شد ✅');
+  }
+
+  function changeToday(cid) {
+    var c = findCourse(cid);
+    if (!c) return;
+    c.sessions = c.sessions.filter(function(s) { return s.date !== todayISO(); });
+    saveData();
+    renderToday(); renderCourses();
+    toast('وضعیت امروز حذف شد');
+  }
+
+  /* Render: course list */
+  function renderCourses() {
+    var box = $('courseList');
+    if (!courses.length) {
+      box.innerHTML = '<div class="empty"><div style="font-size:40px">📚</div>' +
+        '<p>هنوز درسی اضافه نکردی</p>' +
+        '<button class="btn primary" type="button" id="emptyAddBtn">➕ افزودن اولین درس</button></div>';
+      var b = $('emptyAddBtn'); if (b) b.onclick = openAddCourse;
+      return;
+    }
+
+    var html = '';
+    courses.forEach(function(c) {
+      var st = getStats(c);
+      var rateText = st.total > 0 ? faNum(st.rate) + '٪' : '—';
+
+      html += '<div class="course-card" data-id="' + c.id + '">';
+      html += '<div class="course-head"><h3>' + escapeHtml(c.name) + '</h3>';
+      html += '<button class="icon-btn" type="button" data-delete-course="' + c.id + '">🗑</button></div>';
+      if (c.teacher) html += '<p class="muted">' + escapeHtml(c.teacher) + '</p>';
+
+      html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">';
+      html += '<span style="font-size:22px;font-weight:700">' + rateText + '</span>';
+      html += '<span class="muted">' + faNum(st.total) + ' جلسه</span></div>';
+
+      html += '<div class="progress"><div class="' + rateClass(st.rate) +
+              '" style="width:' + (st.total > 0 ? st.rate : 0) + '%"></div></div>';
+
+      html += '<div class="stats-mini">';
+      html += '<span class="present">حاضر: ' + faNum(st.present) + '</span>';
+      html += '<span class="absent">غایب: ' + faNum(st.absent) + '</span>';
+      if (st.late > 0) html += '<span>تأخیر: ' + faNum(st.late) + '</span>';
+      if (st.excused > 0) html += '<span>مرخصی: ' + faNum(st.excused) + '</span>';
+      html += '</div>';
+
+      if (c.schedule && c.schedule.length) {
+        var days = {};
+        c.schedule.forEach(function(s) { days[s.day] = true; });
+        var names = Object.keys(days).map(function(d) { return DAYS_FA[d]; });
+        html += '<div class="note-preview">📅 ' + names.join(' · ') + '</div>';
+      }
+      html += '</div>';
+    });
+    box.innerHTML = html;
+  }
+
+  /* Render: detail modal */
+  function renderDetail() {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+
+    var st = getStats(c);
+    $('detailTitle').textContent = c.name;
+    $('detailTeacher').textContent = c.teacher || 'بدون استاد';
+
+    $('detailStats').innerHTML =
+      '<div class="stat present"><b>' + faNum(st.present) + '</b><span>حاضر</span></div>' +
+      '<div class="stat absent"><b>' + faNum(st.absent) + '</b><span>غایب</span></div>';
+
+    var bar = $('detailBar');
+    bar.className = rateClass(st.rate);
+    bar.style.width = (st.total > 0 ? st.rate : 0) + '%';
+
+    updateScheduleSection();
+    renderCalendar(c);
+    renderNotes(c);
+    renderSessions(c);
+  }
+
+  function updateScheduleSection() {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+    $('scheduleCount').textContent = faNum((c.schedule || []).length);
+    $('toggleDetailSchedule').textContent = detailScheduleOpen ? 'بستن' : 'نمایش';
+
+    var wrap = $('detailScheduleWrap');
+    if (detailScheduleOpen) {
+      wrap.style.display = 'block';
+      renderDetailSchedule(c);
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  function renderDetailSchedule(course) {
+    var container = $('detailSchedule');
+    container.innerHTML = '';
+    var sch = (course.schedule || []).slice().sort(function(a, b) { return a.day - b.day; });
+
+    if (!sch.length) {
+      var e = document.createElement('div');
+      e.className = 'no-schedule';
+      e.textContent = 'هنوز روزی ثبت نشده';
+      container.appendChild(e);
+      return;
+    }
+    sch.forEach(function(s) {
+      var row = createSlotRow(s, container);
+      wireSlotRow(row, course, s.id);
+    });
+  }
+
+  function wireSlotRow(row, course, slotId) {
+    var save = function() {
+      var day = parseInt(row.querySelector('.slot-day').value, 10);
+      var wt = row.querySelector('.slot-week').value;
+      for (var i = 0; i < course.schedule.length; i++) {
+        if (course.schedule[i].id === slotId) {
+          course.schedule[i].day = day;
+          course.schedule[i].weekType = wt;
+          break;
+        }
+      }
+      saveData(); renderToday(); renderCourses(); renderCalendar(course);
+    };
+    row.querySelectorAll('select').forEach(function(el) { el.onchange = save; });
+
+    row.querySelector('.slot-remove').onclick = function() {
+      if (!confirm('این روز حذف شود؟')) return;
+      course.schedule = course.schedule.filter(function(s) { return s.id !== slotId; });
+      saveData(); updateScheduleSection(); renderToday(); renderCourses(); renderCalendar(course);
+      toast('روز حذف شد');
+    };
+  }
+
+  function addScheduleSlotToCourse() {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+    if (!c.schedule) c.schedule = [];
+    c.schedule.push({ id: uid(), day: 0, weekType: 'all' });
+    saveData();
+    detailScheduleOpen = true;
+    updateScheduleSection(); renderToday(); renderCourses(); renderCalendar(c);
+  }
+
+  /* Render: calendar */
+  function renderCalendar(course) {
+    if (calViewYear === null || calViewMonth === null) {
+      var t = new Date();
+      var j = toJalaali(t.getFullYear(), t.getMonth() + 1, t.getDate());
+      calViewYear = j.jy; calViewMonth = j.jm;
+    }
+    var jy = calViewYear, jm = calViewMonth;
+    $('calMonthLabel').textContent = J_MONTHS[jm - 1] + ' ' + faNum(jy);
+
+    var firstG = toGregorian(jy, jm, 1);
+    var firstDate = new Date(firstG.gy, firstG.gm - 1, firstG.gd);
+    var firstDow = jsDayToPersian(firstDate.getDay());
+    var dim = jalaliMonthLength(jy, jm);
+
+    var doyStart = 1;
+    for (var m = 1; m < jm; m++) doyStart += jalaliMonthLength(jy, m);
+
+    var td = new Date();
+    var todayJ = toJalaali(td.getFullYear(), td.getMonth() + 1, td.getDate());
+
+    var selInView = false;
+    if (selectedCalDate) {
+      var sj = isoToJalali(selectedCalDate);
+      if (sj && sj.jy === jy && sj.jm === jm) selInView = true;
+    }
+
+    var html = '';
+    for (var h = 0; h < 7; h++) {
+      html += '<div class="cal-head" style="grid-row:1;grid-column:' + (h + 1) + '">' + DAYS_SHORT[h] + '</div>';
+    }
+
+    var bodyCells = firstDow + dim;
+    for (var i = 0; i < bodyCells; i++) {
+      var r = 2 + Math.floor(i / 7);
+      var col = (i % 7) + 1;
+      var dn = i - firstDow + 1;
+
+      if (dn < 1) {
+        html += '<div class="cal-cell empty" style="grid-row:' + r + ';grid-column:' + col + '"></div>';
+        continue;
+      }
+
+      var dow = (firstDow + dn - 1) % 7;
+      var doy = doyStart + dn - 1;
+      var parity = (Math.ceil(doy / 7) % 2 === 1) ? 'odd' : 'even';
+
+      var sched = 0;
+      (course.schedule || []).forEach(function(s) {
+        if (s.day !== dow) return;
+        if (s.weekType !== 'all' && s.weekType !== parity) return;
+        sched++;
+      });
+
+      var iso = jalaliToISO(jy, jm, dn);
+      var sess = null;
+      (course.sessions || []).forEach(function(s) { if (s.date === iso) sess = s; });
+
+      var cls = ['cal-cell'];
+      if (sched > 0 || sess) cls.push('clickable');
+      if (sched > 0) cls.push('has-class');
+      if (sess) { cls.push('has-session'); cls.push('session-' + sess.status); }
+      if (todayJ.jy === jy && todayJ.jm === jm && todayJ.jd === dn) cls.push('today');
+      if (selInView && selectedCalDate === iso) cls.push('selected');
+
+      html += '<div class="' + cls.join(' ') + '" style="grid-row:' + r + ';grid-column:' + col + '" data-cal-date="' + iso + '">';
+      html += '<span class="cal-day-num">' + faNum(dn) + '</span>';
+      if (sched > 0 && !sess) html += '<span class="cal-dot"></span>';
+      html += '</div>';
+    }
+
+    var totalRows = Math.ceil(bodyCells / 7);
+    for (var p = bodyCells; p < totalRows * 7; p++) {
+      var pr = 2 + Math.floor(p / 7);
+      var pc = (p % 7) + 1;
+      html += '<div class="cal-cell empty" style="grid-row:' + pr + ';grid-column:' + pc + '"></div>';
+    }
+
+    $('calendarGrid').innerHTML = html;
+    if (!selInView) $('calDayInfo').style.display = 'none';
+  }
+
+  function selectCalDay(course, iso) {
+    selectedCalDate = iso;
+    document.querySelectorAll('#calendarGrid .cal-cell').forEach(function(el) { el.classList.remove('selected'); });
+    var t = document.querySelector('#calendarGrid [data-cal-date="' + iso + '"]');
+    if (t) t.classList.add('selected');
+    showCalDayInfo(course, iso);
+  }
+
+  function showCalDayInfo(course, iso) {
+    var info = $('calDayInfo');
+    var j = isoToJalali(iso);
+    if (!j) { info.style.display = 'none'; return; }
+
+    var d = new Date(iso + 'T00:00:00');
+    var dow = jsDayToPersian(d.getDay());
+    var doy = j.jd;
+    for (var m = 1; m < j.jm; m++) doy += jalaliMonthLength(j.jy, m);
+    var parity = (Math.ceil(doy / 7) % 2 === 1) ? 'odd' : 'even';
+
+    var slots = (course.schedule || []).filter(function(s) {
+      if (s.day !== dow) return false;
+      if (s.weekType !== 'all' && s.weekType !== parity) return false;
+      return true;
+    });
+
+    var sess = null;
+    (course.sessions || []).forEach(function(s) { if (s.date === iso) sess = s; });
+
+    var html = '<div class="cal-info-head">' + DAYS_FA[dow] + ' ' + faNum(j.jd) + ' ' + J_MONTHS[j.jm - 1] + ' ' + faNum(j.jy) + '</div>';
+
+    if (!slots.length && !sess) {
+      html += '<p class="muted" style="font-size:12px">کلاسی در این روز نیست</p>';
+    } else {
+      if (slots.length) html += '<div class="cal-info-class">📚 ' + escapeHtml(course.name) + ' دارد</div>';
+      if (sess) {
+        html += '<div style="margin-top:8px;display:flex;align-items:center;gap:8px">';
+        html += '<span class="badge ' + sess.status + '">' + STATUS_LABELS[sess.status] + '</span>';
+        html += '<button class="btn sm" type="button" data-cal-remove="' + iso + '">حذف ثبت</button></div>';
+      } else if (slots.length) {
+        html += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">';
+        html += '<button class="btn present sm" type="button" data-cal-mark="' + iso + '" data-status="present">✅ حاضر</button>';
+        html += '<button class="btn absent sm" type="button" data-cal-mark="' + iso + '" data-status="absent">❌ غایب</button></div>';
+      }
+    }
+    info.innerHTML = html;
+    info.style.display = 'block';
+  }
+
+  /* Render: notes + sessions */
+  function renderNotes(course) {
+    var list = $('notesList');
+    if (!course.notes || !course.notes.length) {
+      list.innerHTML = '<p class="muted" style="text-align:center;padding:10px">هنوز یادداشتی نداری</p>';
+      return;
+    }
+    var sorted = course.notes.slice().sort(function(a, b) { return b.createdAt.localeCompare(a.createdAt); });
+    var html = '';
+    sorted.forEach(function(n) {
+      html += '<div class="note-item"><div class="note-content">';
+      html += '<div class="note-text">' + escapeHtml(n.text) + '</div>';
+      html += '<div class="note-time">' + formatDateTime(n.createdAt) + '</div></div>';
+      html += '<button class="icon-btn" type="button" data-delete-note="' + n.id + '">🗑</button></div>';
+    });
+    list.innerHTML = html;
+  }
+
+  function renderSessions(course) {
+    var s = (course.sessions || []).slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
+    if (!s.length) {
+      $('sessionList').innerHTML = '<p class="muted" style="text-align:center;padding:16px">هنوز جلسه ای ثبت نشده</p>';
+      return;
+    }
+    var html = '';
+    s.forEach(function(x) {
+      html += '<div class="session-item">';
+      html += '<div class="session-head">';
+      html += '<span class="date">' + formatDate(x.date) + '</span>';
+      html += '<span class="badge ' + x.status + '">' + STATUS_LABELS[x.status] + '</span>';
+      html += '<button class="icon-btn" type="button" data-delete-session="' + x.id + '">🗑</button>';
+      html += '</div>';
+      if (x.note) {
+        html += '<div class="session-note">📝 ' + escapeHtml(x.note) + '</div>';
+      }
+      html += '</div>';
+    });
+    $('sessionList').innerHTML = html;
+  }
+
+  function renderBackupLabel() {
+    var el = $('lastBackup');
+    if (!lastBackup) { el.textContent = 'هنوز پشتیبان نگرفته ای'; return; }
+    var days = Math.floor((Date.now() - new Date(lastBackup).getTime()) / 86400000);
+    var rel = days <= 0 ? 'امروز' : days === 1 ? 'دیروز' : faNum(days) + ' روز پیش';
+    el.textContent = 'آخرین پشتیبان: ' + rel;
+  }
+
+  /* Add-course panel */
+  function openAddCourse() {
+    $('addCourseCard').classList.add('open');
+    $('toggleAddCourse').textContent = '✕ بستن';
+    $('toggleAddCourse').classList.remove('primary');
+    setTimeout(function() { $('courseName').focus(); }, 100);
+  }
+  function closeAddCourse() {
+    $('addCourseCard').classList.remove('open');
+    $('toggleAddCourse').textContent = '➕ افزودن درس';
+    $('toggleAddCourse').classList.add('primary');
+  }
+  function toggleAddCourse() {
+    if ($('addCourseCard').classList.contains('open')) closeAddCourse();
+    else openAddCourse();
+  }
+
+  /* Course actions */
+  function addCourse() {
+    var name = $('courseName').value.trim();
+    if (!name) { toast('نام درس را وارد کنید', true); $('courseName').focus(); return; }
+
+    courses.push({
+      id: uid(), name: name,
+      teacher: $('courseTeacher').value.trim(),
+      schedule: readSchedule($('scheduleSlots')),
+      notes: [], sessions: []
+    });
+
+    saveData(); renderToday(); renderCourses();
+    $('courseName').value = '';
+    $('courseTeacher').value = '';
+    $('scheduleSlots').innerHTML = '';
+    closeAddCourse();
+    toast('درس «' + name + '» اضافه شد ✅');
+  }
+
+  function deleteCourse(id) {
+    var c = findCourse(id);
+    if (!c) return;
+    if (!confirm('درس «' + c.name + '» و همه جلسات و یادداشت هاش حذف شود؟')) return;
+    courses = courses.filter(function(x) { return x.id !== id; });
+    saveData(); renderToday(); renderCourses();
+    toast('درس حذف شد');
+  }
+
+  function openDetail(id) {
+    currentCourseId = id;
+    detailScheduleOpen = false;
+    calViewYear = null; calViewMonth = null;
+    selectedCalDate = null;
+    setDatePickerToToday();
+    $('sessionNote').value = '';
+    $('newNoteInput').value = '';
+    $('calDayInfo').style.display = 'none';
+    renderDetail();
+    pushModalHistory();
+    $('detailOverlay').classList.add('open');
+  }
+
+  function addSession(status) {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+    var date = getSelectedISO();
+    var note = $('sessionNote').value.trim();
+
+    var exists = c.sessions.some(function(s) { return s.date === date; });
+    if (exists) {
+      if (!confirm('برای این تاریخ قبلاً ثبت شده. جایگزین شود؟')) return;
+      c.sessions = c.sessions.filter(function(s) { return s.date !== date; });
+    }
+    c.sessions.push({ id: uid(), date: date, status: status, note: note });
+    saveData();
+    $('sessionNote').value = '';
+    renderDetail(); renderToday(); renderCourses();
+    toast('«' + STATUS_LABELS[status] + '» برای ' + formatDate(date) + ' ثبت شد ✅');
+  }
+
+  function deleteSession(sid) {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+    c.sessions = c.sessions.filter(function(s) { return s.id !== sid; });
+    saveData(); renderDetail(); renderToday(); renderCourses();
+    toast('جلسه حذف شد');
+  }
+
+  function markFromCalendar(iso, status) {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+    c.sessions = c.sessions.filter(function(s) { return s.date !== iso; });
+    c.sessions.push({ id: uid(), date: iso, status: status, note: '' });
+    saveData();
+    renderCalendar(c);
+    if (selectedCalDate === iso) {
+      var t = document.querySelector('#calendarGrid [data-cal-date="' + iso + '"]');
+      if (t) t.classList.add('selected');
+    }
+    showCalDayInfo(c, iso);
+    renderDetail(); renderToday(); renderCourses();
+    toast('«' + STATUS_LABELS[status] + '» برای ' + formatDate(iso) + ' ثبت شد ✅');
+  }
+
+  function removeFromCalendar(iso) {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+    c.sessions = c.sessions.filter(function(s) { return s.date !== iso; });
+    saveData();
+    renderCalendar(c);
+    if (selectedCalDate === iso) {
+      var t = document.querySelector('#calendarGrid [data-cal-date="' + iso + '"]');
+      if (t) t.classList.add('selected');
+    }
+    showCalDayInfo(c, iso);
+    renderDetail(); renderToday(); renderCourses();
+    toast('ثبت این روز حذف شد');
+  }
+
+  function addNote() {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+    var text = $('newNoteInput').value.trim();
+    if (!text) { toast('متن یادداشت را بنویسید', true); $('newNoteInput').focus(); return; }
+    if (!c.notes) c.notes = [];
+    c.notes.push({ id: uid(), text: text, createdAt: new Date().toISOString() });
+    saveData();
+    $('newNoteInput').value = '';
+    renderNotes(c); renderCourses();
+    toast('یادداشت اضافه شد ✅');
+  }
+
+  function deleteNote(nid) {
+    var c = findCourse(currentCourseId);
+    if (!c) return;
+    if (!confirm('این یادداشت حذف شود؟')) return;
+    c.notes = c.notes.filter(function(n) { return n.id !== nid; });
+    saveData(); renderNotes(c); renderCourses();
+    toast('یادداشت حذف شد');
+  }
+
+  /* Backup / restore */
+  function download(content, filename, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
+  }
+
+  function exportJson() {
+    var data = { app: 'attendance-tracker', version: 1, exportedAt: new Date().toISOString(), courses: courses };
+    download(JSON.stringify(data, null, 2), 'attendance-tracker-backup-' + timestampForFile() + '.json', 'application/json');
+    lastBackup = new Date().toISOString();
+    saveData(); renderBackupLabel();
+    toast('پشتیبان دانلود شد ✅');
+  }
+
+  function exportCsv() {
+    var rows = [['درس','استاد','تاریخ شمسی','تاریخ میلادی','وضعیت','یادداشت']];
+    courses.forEach(function(c) {
+      (c.sessions || []).forEach(function(s) {
+        var j = isoToJalali(s.date);
+        var js = j ? (j.jy + '/' + pad2(j.jm) + '/' + pad2(j.jd)) : '';
+        rows.push([c.name, c.teacher || '', js, s.date, STATUS_LABELS[s.status] || s.status, s.note || '']);
+      });
+    });
+    if (rows.length === 1) { toast('داده ای وجود ندارد', true); return; }
+    var csv = '\uFEFF' + rows.map(function(r) {
+      return r.map(function(x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\n');
+    download(csv, 'attendance-tracker-' + timestampForFile() + '.csv', 'text/csv;charset=utf-8');
+    toast('فایل CSV دانلود شد ✅');
+  }
+
+  function importFile(file) {
+    if (!file || !file.size) { toast('فایل خالی است ❌', true); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = JSON.parse(e.target.result);
+        if (!data || !Array.isArray(data.courses)) throw new Error('ساختار نامعتبر');
+
+        var ids = {};
+        courses.forEach(function(c) { ids[c.id] = true; });
+        var added = 0, merged = 0;
+
+        data.courses.forEach(function(nc) {
+          if (!nc || !nc.name) return;
+          var n = normalizeCourse(nc);
+          if (ids[n.id]) {
+            var ex = findCourse(n.id);
+            if (ex) {
+              if (!ex.notes) ex.notes = [];
+              var nids = {}; ex.notes.forEach(function(x) { nids[x.id] = true; });
+              n.notes.forEach(function(x) { if (!nids[x.id]) ex.notes.push(x); });
+              var dts = {}; ex.sessions.forEach(function(s) { dts[s.date] = true; });
+              n.sessions.forEach(function(s) { if (!dts[s.date]) ex.sessions.push(s); });
+              if (!ex.schedule || !ex.schedule.length) ex.schedule = n.schedule;
+              merged++;
+            }
+          } else {
+            courses.push(n); ids[n.id] = true; added++;
+          }
+        });
+
+        saveData(); renderToday(); renderCourses(); closeAll();
+        toast('بازیابی: ' + faNum(added) + ' جدید، ' + faNum(merged) + ' ادغام ✅');
+      } catch (err) {
+        console.error('[Import]', err);
+        toast('فایل نامعتبر است ❌', true);
+      }
+    };
+    reader.onerror = function() { toast('خطا در خواندن فایل', true); };
+    reader.readAsText(file);
+  }
+
+  function wipeAll() {
+    if (!confirm('همه داده ها حذف شوند؟')) return;
+    if (!confirm('مطمئنی؟ اول پشتیبان بگیر!')) return;
+    courses = []; saveData(); renderToday(); renderCourses(); closeAll();
+    toast('همه داده ها پاک شد');
+  }
+
+  /* Modal + back button */
+  function pushModalHistory() {
+    if (!modalHistoryPushed) {
+      try { history.pushState({ modal: true }, ''); modalHistoryPushed = true; } catch (e) {}
+    }
+  }
+  function actuallyCloseAll() {
+    document.querySelectorAll('.overlay').forEach(function(o) { o.classList.remove('open'); });
+    modalHistoryPushed = false;
+  }
+  function closeAll() {
+    if (modalHistoryPushed) {
+      try {
+        history.back();
+        setTimeout(function() { if (modalHistoryPushed) actuallyCloseAll(); }, 120);
+      } catch (e) { actuallyCloseAll(); }
+    } else { actuallyCloseAll(); }
+  }
+  window.addEventListener('popstate', function() {
+    if (modalHistoryPushed) actuallyCloseAll();
+  });
+
+  /* Bind events */
+  function bind() {
+    $('toggleAddCourse').onclick = toggleAddCourse;
+    $('addCourseBtn').onclick = addCourse;
+    $('courseName').onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); addCourse(); } };
+    $('courseTeacher').onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); addCourse(); } };
+
+    $('addSlotBtn').onclick = function() { createSlotRow(null, $('scheduleSlots')); };
+    $('addSlotToCourseBtn').onclick = addScheduleSlotToCourse;
+
+    $('toggleDetailSchedule').onclick = function() {
+      detailScheduleOpen = !detailScheduleOpen;
+      updateScheduleSection();
+    };
+
+    $('prevMonth').onclick = function() {
+      calViewMonth--;
+      if (calViewMonth < 1) { calViewMonth = 12; calViewYear--; }
+      var c = findCourse(currentCourseId); if (c) renderCalendar(c);
+    };
+    $('nextMonth').onclick = function() {
+      calViewMonth++;
+      if (calViewMonth > 12) { calViewMonth = 1; calViewYear++; }
+      var c = findCourse(currentCourseId); if (c) renderCalendar(c);
+    };
+
+    $('calendarGrid').onclick = function(e) {
+      var cell = e.target.closest('[data-cal-date]');
+      if (!cell) return;
+      var iso = cell.getAttribute('data-cal-date');
+      var c = findCourse(currentCourseId); if (!c) return;
+      var j = isoToJalali(iso);
+      if (j) { $('jYear').value = j.jy; $('jMonth').value = j.jm; updateDaySelect(j.jy, j.jm, j.jd); }
+      selectCalDay(c, iso);
+    };
+
+    $('calDayInfo').onclick = function(e) {
+      var m = e.target.closest('[data-cal-mark]');
+      if (m) { markFromCalendar(m.getAttribute('data-cal-mark'), m.getAttribute('data-status')); return; }
+      var r = e.target.closest('[data-cal-remove]');
+      if (r) removeFromCalendar(r.getAttribute('data-cal-remove'));
+    };
+
+    $('todaySection').addEventListener('click', function(e) {
+      var m = e.target.closest('[data-today-mark]');
+      if (m) { markToday(m.getAttribute('data-today-mark'), m.getAttribute('data-status')); return; }
+      var c = e.target.closest('[data-today-change]');
+      if (c) changeToday(c.getAttribute('data-today-change'));
+    });
+
+    $('courseList').onclick = function(e) {
+      var d = e.target.closest('[data-delete-course]');
+      if (d) { e.stopPropagation(); deleteCourse(d.getAttribute('data-delete-course')); return; }
+      var card = e.target.closest('.course-card');
+      if (card) openDetail(card.getAttribute('data-id'));
+    };
+
+    $('sessionList').onclick = function(e) {
+      var d = e.target.closest('[data-delete-session]');
+      if (d) deleteSession(d.getAttribute('data-delete-session'));
+    };
+    $('notesList').onclick = function(e) {
+      var d = e.target.closest('[data-delete-note]');
+      if (d) deleteNote(d.getAttribute('data-delete-note'));
+    };
+
+    $('addNoteBtn').onclick = addNote;
+    $('newNoteInput').onkeydown = function(e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); addNote(); }
+    };
+
+    document.querySelectorAll('.status-grid [data-status]').forEach(function(b) {
+      b.onclick = function() { addSession(this.getAttribute('data-status')); };
+    });
+
+    $('closeDetail').onclick = closeAll;
+    $('closeBackup').onclick = closeAll;
+
+    document.querySelectorAll('.overlay').forEach(function(o) {
+      o.onclick = function(e) { if (e.target === o) closeAll(); };
+    });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeAll(); });
+
+    $('openBackup').onclick = function() {
+      pushModalHistory();
+      $('backupOverlay').classList.add('open');
+    };
+    $('exportJson').onclick = exportJson;
+    $('exportCsv').onclick = exportCsv;
+    $('wipeBtn').onclick = wipeAll;
+    $('pickFileBtn').onclick = function() { $('importFile').click(); };
+    $('importFile').onchange = function(e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) importFile(f);
+      e.target.value = '';
+    };
+  }
+
+  /* PWA */
+  function initPWA() {
+    var secure = location.protocol === 'https:' ||
+                 location.hostname === 'localhost' ||
+                 location.hostname === '127.0.0.1';
+
+    if ('serviceWorker' in navigator && secure) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js')
+          .then(function(reg) { console.log('[PWA] registered', reg.scope); })
+          .catch(function(err) { console.warn('[PWA] failed', err); });
+      });
+    }
+
+    var prompt = null;
+    var btn = $('installBtn');
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      prompt = e;
+      if (btn) btn.style.display = 'inline-block';
+    });
+
+    if (btn) {
+      btn.onclick = function() {
+        if (!prompt) return;
+        prompt.prompt();
+        prompt.userChoice.then(function(ch) {
+          prompt = null;
+          btn.style.display = 'none';
+          if (ch.outcome === 'accepted') toast('برنامه نصب شد ✅');
+        });
+      };
+    }
+
+    window.addEventListener('appinstalled', function() {
+      prompt = null;
+      if (btn) btn.style.display = 'none';
+      toast('برنامه با موفقیت نصب شد ✅');
+    });
+  }
+
+  /* Jalali date picker */
+  function initDatePickers() {
+    var t = new Date();
+    var j = toJalaali(t.getFullYear(), t.getMonth() + 1, t.getDate());
+
+    var ySel = $('jYear');
+    ySel.innerHTML = '';
+    for (var y = j.jy - 3; y <= j.jy + 1; y++) {
+      var o = document.createElement('option');
+      o.value = y; o.textContent = faNum(y);
+      ySel.appendChild(o);
+    }
+    ySel.value = j.jy;
+
+    var mSel = $('jMonth');
+    mSel.innerHTML = '';
+    for (var m = 1; m <= 12; m++) {
+      var o2 = document.createElement('option');
+      o2.value = m; o2.textContent = J_MONTHS[m - 1];
+      mSel.appendChild(o2);
+    }
+    mSel.value = j.jm;
+
+    updateDaySelect(j.jy, j.jm, j.jd);
+
+    ySel.onchange = function() { updateDaySelect(+this.value, +$('jMonth').value); };
+    mSel.onchange = function() { updateDaySelect(+$('jYear').value, +this.value); };
+  }
+
+  function updateDaySelect(jy, jm, pref) {
+    var dSel = $('jDay');
+    var prev = pref || parseInt(dSel.value, 10) || 1;
+    dSel.innerHTML = '';
+    var max = jalaliMonthLength(jy, jm);
+    for (var d = 1; d <= max; d++) {
+      var o = document.createElement('option');
+      o.value = d; o.textContent = faNum(d);
+      dSel.appendChild(o);
+    }
+    dSel.value = Math.min(prev, max);
+  }
+
+  function setDatePickerToToday() {
+    var t = new Date();
+    var j = toJalaali(t.getFullYear(), t.getMonth() + 1, t.getDate());
+    $('jYear').value = j.jy; $('jMonth').value = j.jm;
+    updateDaySelect(j.jy, j.jm, j.jd);
+  }
+
+  function getSelectedISO() {
+    return jalaliToISO(+$('jYear').value, +$('jMonth').value, +$('jDay').value);
+  }
+
+  /* Init */
+  function init() {
+    loadData();
+    initDatePickers();
+    bind();
+    initPWA();
+    renderToday();
+    renderCourses();
+    renderBackupLabel();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else { init(); }
+})();
+</script>
+</body>
+</html>
